@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
+<title>Caixa do Futebol</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg:#F4F4F5;
+    --card:#E4E4E7;
+    --ink:#18181B;
+    --muted:#71717A;
+    --gold:#C9A84C;
+    --gold-text:#8C6D2F;
+    --line:#D4D4D8;
+    --white:#FCFCFD;
+    --danger:#B5453E;
+    --radius:16px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter', -apple-system, sans-serif;
+    font-variant-numeric: tabular-nums;
+    min-height:100vh;
+    padding-bottom:88px;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{font-family:'Sora', sans-serif;}
+
+  .app{max-width:520px; margin:0 auto; padding:0 16px;}
+
+  /* HEADER */
+  .topbar{
+    padding:calc(env(safe-area-inset-top,0px) + 18px) 4px 8px;
+    display:flex; align-items:baseline; justify-content:space-between;
+  }
+  .topbar .title{font-size:15px; font-weight:700; letter-spacing:0.01em;}
+  .topbar .subtitle{font-size:12px; color:var(--muted);}
+
+  /* HERO SALDO */
+  .hero{
+    background:var(--ink);
+    color:var(--white);
+    border-radius:20px;
+    padding:22px 20px 20px;
+    margin-top:6px;
+    position:relative;
+    overflow:hidden;
+  }
+  .hero::after{
+    content:"";
+    position:absolute; right:-40px; top:-40px;
+    width:140px; height:140px;
+    border-radius:50%;
+    background:radial-gradient(circle, rgba(201,168,76,0.35), transparent 70%);
+  }
+  .hero .label{font-size:12.5px; color:#B8B8BE; font-weight:500;}
+  .hero .amount{font-size:40px; font-weight:800; margin-top:4px; letter-spacing:-0.02em;}
+  .hero .amount.neg{color:#E08C86;}
+  .hero-stats{display:flex; gap:22px; margin-top:16px; position:relative;}
+  .hero-stats div{font-size:12px; color:#B8B8BE;}
+  .hero-stats strong{display:block; font-size:15px; color:var(--gold); font-weight:700; font-family:'Sora',sans-serif;}
+
+  /* QUICK ACTIONS */
+  .quick-row{display:flex; gap:10px; margin-top:14px;}
+  .qbtn{
+    flex:1;
+    background:var(--card);
+    border:none;
+    border-radius:14px;
+    padding:13px 10px;
+    font-family:'Inter';
+    font-size:13px;
+    font-weight:600;
+    color:var(--ink);
+    display:flex; flex-direction:column; align-items:center; gap:5px;
+    cursor:pointer;
+  }
+  .qbtn .ic{font-size:18px;}
+  .qbtn:active{opacity:0.7;}
+  .qbtn.primary{background:var(--gold); color:var(--ink);}
+
+  /* SECTION */
+  .section{margin-top:26px;}
+  .section-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
+  .section-head h2{font-size:14px; font-weight:700; margin:0; text-transform:none;}
+  .section-head .link{font-size:12.5px; color:var(--gold-text); font-weight:600; background:none; border:none; cursor:pointer; padding:4px 0;}
+
+  .card{
+    background:var(--card);
+    border-radius:var(--radius);
+    padding:4px;
+  }
+  .row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 12px;
+    border-bottom:1px solid var(--line);
+  }
+  .row:last-child{border-bottom:none;}
+  .row-main{min-width:0; flex:1;}
+  .row-name{font-size:14px; font-weight:600; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .row-sub{font-size:12px; color:var(--muted); margin-top:1px;}
+  .row-value{font-size:13.5px; font-weight:700; color:var(--ink); margin-right:10px; white-space:nowrap;}
+  .row-value.in{color:#3F7D52;}
+  .row-value.out{color:var(--danger);}
+
+  .empty{padding:26px 12px; text-align:center; color:var(--muted); font-size:13px;}
+
+  /* TOGGLE (iOS style) */
+  .toggle{
+    width:46px; height:27px; border-radius:20px;
+    background:#C6C6CC;
+    position:relative;
+    border:none; cursor:pointer; flex-shrink:0;
+    transition:background 0.2s;
+  }
+  .toggle.on{background:#34C759;}
+  .toggle::after{
+    content:""; position:absolute; top:2px; left:2px;
+    width:23px; height:23px; border-radius:50%;
+    background:white; box-shadow:0 1px 3px rgba(0,0,0,0.25);
+    transition:transform 0.2s;
+  }
+  .toggle.on::after{transform:translateX(19px);}
+
+  .del-btn{
+    background:none; border:none; color:var(--muted); font-size:18px;
+    padding:4px 6px; cursor:pointer; line-height:1;
+  }
+  .del-btn:active{color:var(--danger);}
+
+  /* ADD FORM INLINE */
+  .add-inline{
+    display:flex; gap:8px; padding:10px 8px 4px;
+  }
+  .add-inline input{
+    border:1px solid var(--line);
+    background:var(--white);
+    border-radius:10px;
+    padding:9px 10px;
+    font-size:13.5px;
+    font-family:'Inter';
+    color:var(--ink);
+  }
+  .add-inline input.name{flex:1; min-width:0;}
+  .add-inline input.val{width:70px;}
+  .add-inline button{
+    background:var(--gold); color:var(--ink); border:none;
+    border-radius:10px; padding:0 14px; font-weight:700; font-size:14px; cursor:pointer;
+  }
+
+  /* BOTTOM TABS */
+  .tabbar{
+    position:fixed; bottom:0; left:0; right:0;
+    background:rgba(244,244,245,0.92);
+    backdrop-filter:blur(14px);
+    border-top:1px solid var(--line);
+    padding:8px 8px calc(env(safe-area-inset-bottom,0px) + 6px);
+    display:flex;
+    z-index:40;
+  }
+  .tab{
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+    background:none; border:none; color:var(--muted); font-family:'Inter'; font-size:10.5px; font-weight:600;
+    padding:4px 0; cursor:pointer;
+  }
+  .tab .ic{font-size:19px;}
+  .tab.active{color:var(--gold-text);}
+
+  .view{display:none;}
+  .view.active{display:block;}
+
+  /* MODAL SHEET */
+  .sheet-backdrop{
+    position:fixed; inset:0; background:rgba(24,24,27,0.45);
+    display:none; align-items:flex-end; z-index:100;
+  }
+  .sheet-backdrop.show{display:flex;}
+  .sheet{
+    background:var(--bg); width:100%; border-radius:22px 22px 0 0;
+    padding:20px 18px calc(env(safe-area-inset-bottom,0px) + 20px);
+    max-width:520px; margin:0 auto;
+  }
+  .sheet h3{margin:0 0 4px; font-size:16px;}
+  .sheet .sub{font-size:12.5px; color:var(--muted); margin-bottom:16px;}
+  .field{margin-bottom:12px;}
+  .field label{display:block; font-size:12px; color:var(--muted); font-weight:600; margin-bottom:5px;}
+  .field input, .field select{
+    width:100%; border:1px solid var(--line); background:var(--white);
+    border-radius:12px; padding:12px 12px; font-size:15px; font-family:'Inter'; color:var(--ink);
+  }
+  .field-row{display:flex; gap:10px;}
+  .field-row .field{flex:1;}
+  .sheet-actions{display:flex; gap:10px; margin-top:6px;}
+  .sheet-actions button{
+    flex:1; padding:14px; border-radius:12px; border:none; font-weight:700; font-size:14.5px; cursor:pointer; font-family:'Inter';
+  }
+  .btn-cancel{background:var(--card); color:var(--ink);}
+  .btn-confirm{background:var(--gold); color:var(--ink);}
+  .btn-danger{background:var(--danger); color:white;}
+
+  .toast{
+    position:fixed; bottom:100px; left:50%; transform:translateX(-50%);
+    background:var(--ink); color:white; padding:10px 18px; border-radius:30px;
+    font-size:13px; font-weight:600; opacity:0; pointer-events:none; transition:opacity 0.25s, transform 0.25s;
+    z-index:200; white-space:nowrap;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(-6px);}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="topbar">
+    <div>
+      <div class="title">Caixa do Futebol</div>
+      <div class="subtitle">Terças-feiras</div>
+    </div>
+    <div class="subtitle" id="hoje-label"></div>
+  </div>
+
+  <div class="hero">
+    <div class="label">Saldo atual</div>
+    <div class="amount" id="saldo-hero">R$ 0</div>
+    <div class="hero-stats">
+      <div>Mensalistas em dia<strong id="stat-mensalistas">0/0</strong></div>
+      <div>Esporádicos da semana<strong id="stat-esporadicos">R$ 0</strong></div>
+      <div>Recebido no mês<strong id="stat-recebido">R$ 0</strong></div>
+    </div>
+    <div class="quick-row">
+      <button class="qbtn primary" onclick="abrirJogo()"><span class="ic">⚽</span>Registrar jogo</button>
+      <button class="qbtn" onclick="abrirLancamento()"><span class="ic">＋</span>Lançamento</button>
+    </div>
+  </div>
+
+  <!-- INÍCIO -->
+  <div class="view active" id="view-inicio">
+    <div class="section">
+      <div class="section-head">
+        <h2>Últimos lançamentos</h2>
+        <button class="link" onclick="irPara('lancamentos')">Ver todos</button>
+      </div>
+      <div class="card" id="lista-recentes"></div>
+    </div>
+  </div>
+
+  <!-- MENSALISTAS -->
+  <div class="view" id="view-mensalistas">
+    <div class="section">
+      <div class="section-head">
+        <h2>Mensalistas</h2>
+        <button class="link" onclick="confirmarNovoMes()">Novo mês</button>
+      </div>
+      <div class="card" id="lista-mensalistas"></div>
+      <div class="card add-inline" style="margin-top:8px;">
+        <input class="name" id="novo-mensalista-nome" placeholder="Nome do mensalista">
+        <input class="val" id="novo-mensalista-valor" placeholder="R$" inputmode="decimal" value="50">
+        <button onclick="addMensalista()">+</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ESPORÁDICOS -->
+  <div class="view" id="view-esporadicos">
+    <div class="section">
+      <div class="section-head">
+        <h2>Esporádicos desta semana</h2>
+        <button class="link" onclick="confirmarNovaSemana()">Nova semana</button>
+      </div>
+      <div class="card" id="lista-esporadicos"></div>
+      <div class="card add-inline" style="margin-top:8px;">
+        <input class="name" id="novo-esp-nome" placeholder="Nome do esporádico">
+        <input class="val" id="novo-esp-valor" placeholder="R$" inputmode="decimal" value="15">
+        <button onclick="addEsporadico()">+</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LANÇAMENTOS -->
+  <div class="view" id="view-lancamentos">
+    <div class="section">
+      <div class="section-head">
+        <h2>Entrada e saída</h2>
+        <button class="link" onclick="abrirLancamento()">+ Novo</button>
+      </div>
+      <div class="card" id="lista-lancamentos"></div>
+    </div>
+  </div>
+</div>
+
+<div class="tabbar">
+  <button class="tab active" data-tab="inicio" onclick="irPara('inicio')"><span class="ic">🏠</span>Início</button>
+  <button class="tab" data-tab="mensalistas" onclick="irPara('mensalistas')"><span class="ic">📋</span>Mensalistas</button>
+  <button class="tab" data-tab="esporadicos" onclick="irPara('esporadicos')"><span class="ic">🎽</span>Esporádicos</button>
+  <button class="tab" data-tab="lancamentos" onclick="irPara('lancamentos')"><span class="ic">🧾</span>Lançamentos</button>
+</div>
+
+<!-- SHEET: novo lançamento -->
+<div class="sheet-backdrop" id="sheet-lancamento">
+  <div class="sheet">
+    <h3>Novo lançamento</h3>
+    <div class="sub">Registre qualquer dinheiro que entrou ou saiu do caixa.</div>
+    <div class="field">
+      <label>Descrição</label>
+      <input id="lanc-desc" placeholder="Ex: aluguel do campo">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Entrada (R$)</label>
+        <input id="lanc-entrada" inputmode="decimal" placeholder="0">
+      </div>
+      <div class="field">
+        <label>Saída (R$)</label>
+        <input id="lanc-saida" inputmode="decimal" placeholder="0">
+      </div>
+    </div>
+    <div class="field">
+      <label>Data</label>
+      <input id="lanc-data" type="date">
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-cancel" onclick="fecharSheet('sheet-lancamento')">Cancelar</button>
+      <button class="btn-confirm" onclick="salvarLancamento()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET: registrar jogo -->
+<div class="sheet-backdrop" id="sheet-jogo">
+  <div class="sheet">
+    <h3>Registrar jogo de hoje</h3>
+    <div class="sub">Lança automaticamente as duas saídas fixas do jogo.</div>
+    <div class="field-row">
+      <div class="field">
+        <label>Aluguel do campo (R$)</label>
+        <input id="jogo-campo" inputmode="decimal" value="250">
+      </div>
+      <div class="field">
+        <label>Lavagem de uniforme (R$)</label>
+        <input id="jogo-uniforme" inputmode="decimal" value="70">
+      </div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-cancel" onclick="fecharSheet('sheet-jogo')">Cancelar</button>
+      <button class="btn-confirm" onclick="salvarJogo()">Lançar despesas</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ======================= ESTADO ======================= */
+let dados = null;
+const STORAGE_KEY = 'caixa-futebol-v1';
+
+const SEED = {
+  ledger: [
+    {data:'2026-09-01', desc:'Saldo inicial do grupo', entrada:815, saida:null},
+    {data:'2026-09-01', desc:'Mensalidades de setembro', entrada:null, saida:null},
+    {data:'2026-09-08', desc:'Esporádicos - jogo 01/09', entrada:15, saida:null},
+    {data:'2026-09-08', desc:'Aluguel do campo - jogo 01/09', entrada:null, saida:220},
+    {data:'2026-09-08', desc:'Lavagem de uniforme - jogo 01/09', entrada:null, saida:70}
+  ],
+  mensalistas: [
+    {nome:'Athur Araújo', fone:'19983558991', pago:true, valor:50},
+    {nome:'Bruno Trevisan', fone:'19993578574', pago:true, valor:50},
+    {nome:'Carlos Cezario', fone:'19998797913', pago:true, valor:50},
+    {nome:'Charlles', fone:'19995124787', pago:true, valor:50},
+    {nome:'Douglinha', fone:'19989795657', pago:false, valor:50},
+    {nome:'Felipe Martins', fone:'19971463974', pago:false, valor:50},
+    {nome:'Filipe Meireles', fone:'19997173442', pago:false, valor:50},
+    {nome:'Furlaneto', fone:'19982506875', pago:false, valor:50},
+    {nome:'Gabriel', fone:'19987330383', pago:false, valor:50},
+    {nome:'Gean Peres', fone:'19994711123', pago:true, valor:50},
+    {nome:'Guilherme Contrijani', fone:'19982022861', pago:true, valor:50},
+    {nome:'Italo', fone:'19991512674', pago:false, valor:50},
+    {nome:'JD', fone:'19983383314', pago:false, valor:50},
+    {nome:'Jeferson Araujo', fone:'19982297730', pago:true, valor:50},
+    {nome:'Jordão', fone:'19982446935', pago:false, valor:50},
+    {nome:'Jorge', fone:'19982285444', pago:true, valor:50},
+    {nome:'Kaue Loro', fone:'19995971277', pago:true, valor:50},
+    {nome:'Leo Silva', fone:'19989265268', pago:true, valor:50},
+    {nome:'Lucas Beraldo', fone:'19974185076', pago:true, valor:50},
+    {nome:'Luciano Soares', fone:'19992153696', pago:true, valor:50},
+    {nome:'Pedrão JDP', fone:'19998518150', pago:false, valor:50},
+    {nome:'Renan', fone:'19993595995', pago:false, valor:50},
+    {nome:'Tintim', fone:'19991410014', pago:false, valor:50},
+    {nome:'V Ret', fone:'19994442736', pago:false, valor:50},
+    {nome:'Vitão Rabiot', fone:'19920098663', pago:true, valor:50},
+    {nome:'Vitin', fone:'19997173442', pago:false, valor:50},
+    {nome:'Wesllen china', fone:'19993626267', pago:true, valor:50},
+    {nome:'Wilson', fone:'19981177806', pago:true, valor:50},
+    {nome:'Zé love', fone:'19981478982', pago:false, valor:50},
+    {nome:'Eduardo Queiroz', fone:'19992543171', pago:true, valor:50}
+  ],
+  esporadicos: [
+    {nome:'Danilo (charles)', valor:15, pago:false},
+    {nome:'Smigool (Paulo)', valor:15, pago:true},
+    {nome:'Kadu (Vitor)', valor:15, pago:false},
+    {nome:'Gustavo (Leo)', valor:15, pago:false},
+    {nome:'Leo moraes (arthur)', valor:15, pago:false},
+    {nome:'Felipe (Jorge)', valor:15, pago:false},
+    {nome:'Nicolas (leo)', valor:15, pago:false},
+    {nome:'Gui (china)', valor:15, pago:false},
+    {nome:'Gustavo lopes (dado)', valor:15, pago:false},
+    {nome:'Gabriel Gomes (jorge)', valor:15, pago:false},
+    {nome:'Trindade (jorge)', valor:15, pago:false},
+    {nome:'Juliano (jorge)', valor:15, pago:false}
+  ]
+};
+
+/* ======================= PERSISTÊNCIA =======================
+   Esta versão usa localStorage: os dados ficam guardados no
+   navegador deste aparelho. Se você limpar os dados do Safari
+   ou trocar de aparelho, o caixa não acompanha.
+======================================================== */
+async function carregar(){
+  try{
+    const bruto = localStorage.getItem(STORAGE_KEY);
+    dados = bruto ? JSON.parse(bruto) : JSON.parse(JSON.stringify(SEED));
+    if(!bruto) await salvar();
+  }catch(e){
+    dados = JSON.parse(JSON.stringify(SEED));
+  }
+  render();
+}
+
+async function salvar(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
+  }catch(e){
+    mostrarToast('Não deu pra salvar agora');
+  }
+}
+
+/* ======================= HELPERS ======================= */
+function fmtR(v){
+  v = Number(v)||0;
+  return 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:2});
+}
+function fmtData(iso){
+  if(!iso) return '';
+  const [y,m,d] = iso.split('-');
+  return d+'/'+m;
+}
+function hojeISO(){
+  const d = new Date();
+  return d.toISOString().slice(0,10);
+}
+function mostrarToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+/* ======================= CÁLCULO ======================= */
+function calcularSaldo(){
+  return dados.ledger.reduce((s,l)=> s + (Number(l.entrada)||0) - (Number(l.saida)||0), 0);
+}
+
+/* ======================= RENDER ======================= */
+function render(){
+  const saldo = calcularSaldo();
+  const heroEl = document.getElementById('saldo-hero');
+  heroEl.textContent = fmtR(saldo);
+  heroEl.classList.toggle('neg', saldo < 0);
+
+  const emDia = dados.mensalistas.filter(m=>m.pago).length;
+  document.getElementById('stat-mensalistas').textContent = emDia + '/' + dados.mensalistas.length;
+
+  const totalEsp = dados.esporadicos.reduce((s,e)=> s + (e.pago? Number(e.valor)||0 : 0), 0);
+  document.getElementById('stat-esporadicos').textContent = fmtR(totalEsp);
+
+  const mesAtual = hojeISO().slice(0,7);
+  const recebidoMes = dados.ledger
+    .filter(l => l.data && l.data.slice(0,7)===mesAtual)
+    .reduce((s,l)=> s + (Number(l.entrada)||0), 0);
+  document.getElementById('stat-recebido').textContent = fmtR(recebidoMes);
+
+  renderRecentes();
+  renderMensalistas();
+  renderEsporadicos();
+  renderLancamentos();
+
+  document.getElementById('hoje-label').textContent = new Date().toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'});
+}
+
+function renderRecentes(){
+  const el = document.getElementById('lista-recentes');
+  const ultimos = dados.ledger.slice(-5).reverse();
+  if(ultimos.length===0){ el.innerHTML = '<div class="empty">Nenhum lançamento ainda</div>'; return; }
+  el.innerHTML = ultimos.map(linhaLedger).join('');
+}
+
+function renderLancamentos(){
+  const el = document.getElementById('lista-lancamentos');
+  const todos = dados.ledger.slice().reverse();
+  if(todos.length===0){ el.innerHTML = '<div class="empty">Nenhum lançamento ainda</div>'; return; }
+  el.innerHTML = todos.map((l,idxRev)=>{
+    const idx = dados.ledger.length - 1 - idxRev;
+    return linhaLedger(l, idx);
+  }).join('');
+}
+
+function linhaLedger(l, idx){
+  const valor = l.entrada ? `<span class="row-value in">+${fmtR(l.entrada)}</span>` : (l.saida ? `<span class="row-value out">-${fmtR(l.saida)}</span>` : `<span class="row-value">—</span>`);
+  const delBtn = (idx!==undefined) ? `<button class="del-btn" onclick="removerLancamento(${idx})">✕</button>` : '';
+  return `<div class="row">
+    <div class="row-main">
+      <div class="row-name">${escapeHtml(l.desc||'Sem descrição')}</div>
+      <div class="row-sub">${fmtData(l.data)}</div>
+    </div>
+    ${valor}${delBtn}
+  </div>`;
+}
+
+function renderMensalistas(){
+  const el = document.getElementById('lista-mensalistas');
+  if(dados.mensalistas.length===0){ el.innerHTML = '<div class="empty">Nenhum mensalista cadastrado</div>'; return; }
+  el.innerHTML = dados.mensalistas.map((m,i)=>`
+    <div class="row">
+      <div class="row-main">
+        <div class="row-name">${escapeHtml(m.nome)}</div>
+        <div class="row-sub">${fmtR(m.valor)}/mês</div>
+      </div>
+      <button class="toggle ${m.pago?'on':''}" onclick="toggleMensalista(${i})"></button>
+      <button class="del-btn" onclick="removerMensalista(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function renderEsporadicos(){
+  const el = document.getElementById('lista-esporadicos');
+  if(dados.esporadicos.length===0){ el.innerHTML = '<div class="empty">Ninguém cadastrado nesta semana</div>'; return; }
+  el.innerHTML = dados.esporadicos.map((e,i)=>`
+    <div class="row">
+      <div class="row-main">
+        <div class="row-name">${escapeHtml(e.nome)}</div>
+        <div class="row-sub">${fmtR(e.valor)}</div>
+      </div>
+      <button class="toggle ${e.pago?'on':''}" onclick="toggleEsporadico(${i})"></button>
+      <button class="del-btn" onclick="removerEsporadico(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+/* ======================= NAVEGAÇÃO ======================= */
+function irPara(nome){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+nome).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===nome));
+}
+
+/* ======================= AÇÕES: MENSALISTAS ======================= */
+async function toggleMensalista(i){
+  const m = dados.mensalistas[i];
+  const novoStatus = !m.pago;
+  m.pago = novoStatus;
+  if(novoStatus){
+    dados.ledger.push({data: hojeISO(), desc: 'Mensalidade - '+m.nome, entrada: m.valor, saida: null});
+    mostrarToast('Pagamento lançado no caixa');
+  }
+  await salvar();
+  render();
+}
+
+async function addMensalista(){
+  const nome = document.getElementById('novo-mensalista-nome').value.trim();
+  const valor = parseFloat(document.getElementById('novo-mensalista-valor').value.replace(',','.')) || 50;
+  if(!nome){ mostrarToast('Digite o nome'); return; }
+  dados.mensalistas.push({nome, fone:'', pago:false, valor});
+  document.getElementById('novo-mensalista-nome').value='';
+  document.getElementById('novo-mensalista-valor').value='50';
+  await salvar();
+  render();
+}
+
+async function removerMensalista(i){
+  dados.mensalistas.splice(i,1);
+  await salvar();
+  render();
+}
+
+async function confirmarNovoMes(){
+  if(!confirm('Zerar o status de pagamento de todos os mensalistas para o novo mês?')) return;
+  dados.mensalistas.forEach(m=> m.pago = false);
+  await salvar();
+  render();
+  mostrarToast('Novo mês iniciado');
+}
+
+/* ======================= AÇÕES: ESPORÁDICOS ======================= */
+async function toggleEsporadico(i){
+  const e = dados.esporadicos[i];
+  const novoStatus = !e.pago;
+  e.pago = novoStatus;
+  if(novoStatus){
+    dados.ledger.push({data: hojeISO(), desc: 'Esporádico - '+e.nome, entrada: e.valor, saida: null});
+    mostrarToast('Pagamento lançado no caixa');
+  }
+  await salvar();
+  render();
+}
+
+async function addEsporadico(){
+  const nome = document.getElementById('novo-esp-nome').value.trim();
+  const valor = parseFloat(document.getElementById('novo-esp-valor').value.replace(',','.')) || 15;
+  if(!nome){ mostrarToast('Digite o nome'); return; }
+  dados.esporadicos.push({nome, valor, pago:false});
+  document.getElementById('novo-esp-nome').value='';
+  document.getElementById('novo-esp-valor').value='15';
+  await salvar();
+  render();
+}
+
+async function removerEsporadico(i){
+  dados.esporadicos.splice(i,1);
+  await salvar();
+  render();
+}
+
+async function confirmarNovaSemana(){
+  if(!confirm('Limpar a lista de esporádicos para a próxima semana?')) return;
+  dados.esporadicos = [];
+  await salvar();
+  render();
+  mostrarToast('Semana zerada');
+}
+
+/* ======================= AÇÕES: LANÇAMENTOS ======================= */
+function abrirLancamento(){
+  document.getElementById('lanc-desc').value='';
+  document.getElementById('lanc-entrada').value='';
+  document.getElementById('lanc-saida').value='';
+  document.getElementById('lanc-data').value=hojeISO();
+  document.getElementById('sheet-lancamento').classList.add('show');
+}
+
+async function salvarLancamento(){
+  const desc = document.getElementById('lanc-desc').value.trim();
+  const entrada = parseFloat(document.getElementById('lanc-entrada').value.replace(',','.')) || null;
+  const saida = parseFloat(document.getElementById('lanc-saida').value.replace(',','.')) || null;
+  const data = document.getElementById('lanc-data').value || hojeISO();
+  if(!desc){ mostrarToast('Descreva o lançamento'); return; }
+  if(!entrada && !saida){ mostrarToast('Informe um valor de entrada ou saída'); return; }
+  dados.ledger.push({data, desc, entrada, saida});
+  await salvar();
+  render();
+  fecharSheet('sheet-lancamento');
+  mostrarToast('Lançamento salvo');
+}
+
+async function removerLancamento(idx){
+  if(!confirm('Apagar este lançamento?')) return;
+  dados.ledger.splice(idx,1);
+  await salvar();
+  render();
+}
+
+/* ======================= AÇÕES: REGISTRAR JOGO ======================= */
+function abrirJogo(){
+  document.getElementById('sheet-jogo').classList.add('show');
+}
+
+async function salvarJogo(){
+  const campo = parseFloat(document.getElementById('jogo-campo').value.replace(',','.')) || 0;
+  const uniforme = parseFloat(document.getElementById('jogo-uniforme').value.replace(',','.')) || 0;
+  const hoje = hojeISO();
+  if(campo>0) dados.ledger.push({data:hoje, desc:'Aluguel do campo', entrada:null, saida:campo});
+  if(uniforme>0) dados.ledger.push({data:hoje, desc:'Lavagem de uniforme', entrada:null, saida:uniforme});
+  await salvar();
+  render();
+  fecharSheet('sheet-jogo');
+  mostrarToast('Despesas do jogo lançadas');
+}
+
+function fecharSheet(id){
+  document.getElementById(id).classList.remove('show');
+}
+
+document.querySelectorAll('.sheet-backdrop').forEach(bd=>{
+  bd.addEventListener('click', (e)=>{ if(e.target===bd) bd.classList.remove('show'); });
+});
+
+carregar();
+</script>
+</body>
+</html>
