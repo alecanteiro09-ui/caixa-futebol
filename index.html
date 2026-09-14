@@ -90,6 +90,13 @@
   .section-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
   .section-head h2{font-size:14px; font-weight:700; margin:0; text-transform:none;}
   .section-head .link{font-size:12.5px; color:var(--gold-text); font-weight:600; background:none; border:none; cursor:pointer; padding:4px 0;}
+  .section-head select{
+    border:1px solid var(--line); background:var(--white); border-radius:8px;
+    padding:6px 10px; font-size:12.5px; font-family:'Inter'; font-weight:600; color:var(--ink);
+  }
+
+  .row-value.zero{color:var(--muted);}
+  .row-note{padding:2px 12px 12px; font-size:12px; color:var(--muted); line-height:1.5;}
 
   .card{
     background:var(--card);
@@ -291,6 +298,35 @@
       <div class="card" id="lista-lancamentos"></div>
     </div>
   </div>
+
+  <!-- RELATÓRIO -->
+  <div class="view" id="view-relatorio">
+    <div class="section">
+      <div class="section-head">
+        <h2>Relatório mensal</h2>
+        <select id="relatorio-mes" onchange="renderRelatorio()"></select>
+      </div>
+      <div class="card" id="relatorio-resumo"></div>
+    </div>
+    <div class="section">
+      <div class="section-head">
+        <h2>Por categoria</h2>
+      </div>
+      <div class="card" id="relatorio-categorias"></div>
+    </div>
+    <div class="section">
+      <div class="section-head">
+        <h2>Mensalistas <span style="font-weight:400; color:var(--muted); font-size:11.5px;">(status atual)</span></h2>
+      </div>
+      <div class="card" id="relatorio-mensalistas"></div>
+    </div>
+    <div class="section">
+      <div class="section-head">
+        <h2>Esporádicos <span style="font-weight:400; color:var(--muted); font-size:11.5px;">(semana atual)</span></h2>
+      </div>
+      <div class="card" id="relatorio-esporadicos"></div>
+    </div>
+  </div>
 </div>
 
 <div class="tabbar">
@@ -298,6 +334,7 @@
   <button class="tab" data-tab="mensalistas" onclick="irPara('mensalistas')"><span class="ic">📋</span>Mensalistas</button>
   <button class="tab" data-tab="esporadicos" onclick="irPara('esporadicos')"><span class="ic">🎽</span>Esporádicos</button>
   <button class="tab" data-tab="lancamentos" onclick="irPara('lancamentos')"><span class="ic">🧾</span>Lançamentos</button>
+  <button class="tab" data-tab="relatorio" onclick="irPara('relatorio')"><span class="ic">📊</span>Relatório</button>
 </div>
 
 <!-- SHEET: novo lançamento -->
@@ -488,6 +525,7 @@ function render(){
   renderMensalistas();
   renderEsporadicos();
   renderLancamentos();
+  renderRelatorio();
 
   document.getElementById('hoje-label').textContent = new Date().toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'});
 }
@@ -549,6 +587,130 @@ function renderEsporadicos(){
       <button class="del-btn" onclick="removerEsporadico(${i})">✕</button>
     </div>
   `).join('');
+}
+
+/* ======================= RELATÓRIO MENSAL ======================= */
+function categoriaDesc(desc){
+  desc = (desc || '').toLowerCase();
+  if(desc.includes('mensalidade')) return 'Mensalidades';
+  if(desc.includes('esporádico')) return 'Esporádicos';
+  if(desc.includes('aluguel do campo')) return 'Aluguel do campo';
+  if(desc.includes('lavagem de uniforme')) return 'Lavagem de uniforme';
+  if(desc.includes('saldo inicial')) return 'Saldo inicial';
+  return 'Outros';
+}
+
+function nomeMes(m){
+  const [y,mm] = m.split('-');
+  const d = new Date(Number(y), Number(mm)-1, 1);
+  const nome = d.toLocaleDateString('pt-BR', {month:'long', year:'numeric'});
+  return nome.charAt(0).toUpperCase()+nome.slice(1);
+}
+
+function popularSeletorMeses(){
+  const sel = document.getElementById('relatorio-mes');
+  const mesAtual = hojeISO().slice(0,7);
+  const mesesSet = new Set(dados.ledger.filter(l=>l.data).map(l=>l.data.slice(0,7)));
+  mesesSet.add(mesAtual);
+  const meses = Array.from(mesesSet).sort().reverse();
+  const valorAtual = sel.value || mesAtual;
+  sel.innerHTML = meses.map(m=>`<option value="${m}">${nomeMes(m)}</option>`).join('');
+  sel.value = meses.includes(valorAtual) ? valorAtual : meses[0];
+}
+
+function renderRelatorio(){
+  const sel = document.getElementById('relatorio-mes');
+  if(!sel) return;
+  popularSeletorMeses();
+  const mes = sel.value;
+
+  const doMes = dados.ledger.filter(l => l.data && l.data.slice(0,7)===mes);
+  const entradasMes = doMes.reduce((s,l)=> s + (Number(l.entrada)||0), 0);
+  const saidasMes = doMes.reduce((s,l)=> s + (Number(l.saida)||0), 0);
+  const saldoMes = entradasMes - saidasMes;
+  const saldoAcumulado = dados.ledger
+    .filter(l => l.data && l.data.slice(0,7) <= mes)
+    .reduce((s,l)=> s + (Number(l.entrada)||0) - (Number(l.saida)||0), 0);
+
+  document.getElementById('relatorio-resumo').innerHTML = `
+    <div class="row">
+      <div class="row-main"><div class="row-name">Entradas do mês</div></div>
+      <span class="row-value ${entradasMes? 'in':'zero'}">+${fmtR(entradasMes)}</span>
+    </div>
+    <div class="row">
+      <div class="row-main"><div class="row-name">Saídas do mês</div></div>
+      <span class="row-value ${saidasMes? 'out':'zero'}">-${fmtR(saidasMes)}</span>
+    </div>
+    <div class="row">
+      <div class="row-main"><div class="row-name">Saldo do mês</div></div>
+      <span class="row-value ${saldoMes<0?'out':'in'}">${saldoMes<0?'-':'+'}${fmtR(Math.abs(saldoMes))}</span>
+    </div>
+    <div class="row">
+      <div class="row-main"><div class="row-name">Saldo acumulado</div><div class="row-sub">até o fim de ${nomeMes(mes).toLowerCase()}</div></div>
+      <span class="row-value">${fmtR(saldoAcumulado)}</span>
+    </div>
+    <div class="row">
+      <div class="row-main"><div class="row-name">Lançamentos no mês</div></div>
+      <span class="row-value">${doMes.length}</span>
+    </div>
+  `;
+
+  const catEl = document.getElementById('relatorio-categorias');
+  const categorias = {};
+  doMes.forEach(l=>{
+    const cat = categoriaDesc(l.desc);
+    if(!categorias[cat]) categorias[cat] = {entrada:0, saida:0};
+    categorias[cat].entrada += Number(l.entrada)||0;
+    categorias[cat].saida += Number(l.saida)||0;
+  });
+  const catEntries = Object.entries(categorias).sort((a,b)=> (b[1].entrada+b[1].saida)-(a[1].entrada+a[1].saida));
+  if(catEntries.length===0){
+    catEl.innerHTML = '<div class="empty">Nenhum lançamento neste mês</div>';
+  }else{
+    catEl.innerHTML = catEntries.map(([cat,v])=>{
+      const partes = [];
+      if(v.entrada) partes.push(`<span class="row-value in">+${fmtR(v.entrada)}</span>`);
+      if(v.saida) partes.push(`<span class="row-value out">-${fmtR(v.saida)}</span>`);
+      return `<div class="row">
+        <div class="row-main"><div class="row-name">${escapeHtml(cat)}</div></div>
+        ${partes.join('')}
+      </div>`;
+    }).join('');
+  }
+
+  const totalMens = dados.mensalistas.length;
+  const pagosMens = dados.mensalistas.filter(m=>m.pago);
+  const pendentesMens = dados.mensalistas.filter(m=>!m.pago);
+  const esperadoMens = dados.mensalistas.reduce((s,m)=> s+(Number(m.valor)||0), 0);
+  const arrecadadoMens = pagosMens.reduce((s,m)=> s+(Number(m.valor)||0), 0);
+  document.getElementById('relatorio-mensalistas').innerHTML = `
+    <div class="row">
+      <div class="row-main"><div class="row-name">Pagos</div><div class="row-sub">${pagosMens.length}/${totalMens} mensalistas</div></div>
+      <span class="row-value ${arrecadadoMens?'in':'zero'}">+${fmtR(arrecadadoMens)}</span>
+    </div>
+    <div class="row">
+      <div class="row-main"><div class="row-name">Faltando receber</div><div class="row-sub">${pendentesMens.length} mensalista(s)</div></div>
+      <span class="row-value ${(esperadoMens-arrecadadoMens)?'out':'zero'}">${fmtR(esperadoMens-arrecadadoMens)}</span>
+    </div>
+    ${pendentesMens.length? `<div class="row-note">Pendentes: ${pendentesMens.map(m=>escapeHtml(m.nome)).join(', ')}</div>` : ''}
+  `;
+
+  const totalEsp = dados.esporadicos.length;
+  const pagosEsp = dados.esporadicos.filter(e=>e.pago);
+  const pendentesEsp = dados.esporadicos.filter(e=>!e.pago);
+  const esperadoEsp = dados.esporadicos.reduce((s,e)=> s+(Number(e.valor)||0), 0);
+  const arrecadadoEsp = pagosEsp.reduce((s,e)=> s+(Number(e.valor)||0), 0);
+  document.getElementById('relatorio-esporadicos').innerHTML = `
+    <div class="row">
+      <div class="row-main"><div class="row-name">Pagos</div><div class="row-sub">${pagosEsp.length}/${totalEsp} esporádicos</div></div>
+      <span class="row-value ${arrecadadoEsp?'in':'zero'}">+${fmtR(arrecadadoEsp)}</span>
+    </div>
+    <div class="row">
+      <div class="row-main"><div class="row-name">Faltando receber</div><div class="row-sub">${pendentesEsp.length} esporádico(s)</div></div>
+      <span class="row-value ${(esperadoEsp-arrecadadoEsp)?'out':'zero'}">${fmtR(esperadoEsp-arrecadadoEsp)}</span>
+    </div>
+    ${pendentesEsp.length? `<div class="row-note">Pendentes: ${pendentesEsp.map(e=>escapeHtml(e.nome)).join(', ')}</div>` : ''}
+  `;
 }
 
 function escapeHtml(s){
