@@ -593,6 +593,23 @@
   </div>
 </div>
 
+<!-- SHEET: editar data -->
+<div class="sheet-backdrop" id="sheet-data">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3 id="data-sheet-titulo">Data</h3>
+    <div class="sub" id="data-sheet-sub"></div>
+    <div class="field">
+      <label>Data</label>
+      <input id="data-sheet-input" type="date">
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-cancel" onclick="__aoConfirmarData=null; fecharSheet('sheet-data')">Cancelar</button>
+      <button class="btn-confirm" onclick="confirmarSheetData()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -864,11 +881,14 @@ function linhaLedger(l, idx){
   const icon = categoriaIcon(cat);
   const valor = l.entrada ? `<span class="row-value in">+${fmtR(l.entrada)}</span>` : (l.saida ? `<span class="row-value out">-${fmtR(l.saida)}</span>` : `<span class="row-value zero">—</span>`);
   const delBtn = (idx!==undefined) ? `<button class="del-btn" onclick="removerLancamento(${idx})">✕</button>` : '';
+  const dataHtml = (idx!==undefined)
+    ? `<button class="edit-chip" onclick="editarDataLancamento(${idx})">${fmtData(l.data)} ✏️</button>`
+    : fmtData(l.data);
   return `<div class="row">
     <div class="cat-ic">${icon}</div>
     <div class="row-main">
       <div class="row-name">${escapeHtml(l.desc||'Sem descrição')}</div>
-      <div class="row-sub">${fmtData(l.data)}</div>
+      <div class="row-sub">${dataHtml}</div>
     </div>
     ${valor}${delBtn}
   </div>`;
@@ -990,16 +1010,21 @@ function irPara(nome){
 }
 
 /* ======================= AÇÕES: MENSALISTAS ======================= */
-async function toggleMensalista(i){
+function toggleMensalista(i){
   const m = dados.mensalistas[i];
-  const novoStatus = !m.pago;
-  m.pago = novoStatus;
-  if(novoStatus){
-    dados.ledger.push({data: hojeISO(), desc: 'Mensalidade - '+m.nome, entrada: m.valor, saida: null});
-    mostrarToast('Pagamento lançado no caixa');
+  if(m.pago){
+    m.pago = false;
+    salvar();
+    render();
+    return;
   }
-  await salvar();
-  render();
+  abrirSheetData('Data do pagamento', `Quando ${m.nome} pagou a mensalidade?`, hojeISO(), async (data)=>{
+    m.pago = true;
+    dados.ledger.push({data, desc: 'Mensalidade - '+m.nome, entrada: m.valor, saida: null});
+    await salvar();
+    render();
+    mostrarToast('Pagamento lançado no caixa');
+  });
 }
 
 async function addMensalista(){
@@ -1060,16 +1085,21 @@ function cobrarWhatsApp(nome, fone, valor){
 }
 
 /* ======================= AÇÕES: ESPORÁDICOS ======================= */
-async function toggleEsporadico(i){
+function toggleEsporadico(i){
   const e = dados.esporadicos[i];
-  const novoStatus = !e.pago;
-  e.pago = novoStatus;
-  if(novoStatus){
-    dados.ledger.push({data: hojeISO(), desc: 'Esporádico - '+e.nome, entrada: e.valor, saida: null});
-    mostrarToast('Pagamento lançado no caixa');
+  if(e.pago){
+    e.pago = false;
+    salvar();
+    render();
+    return;
   }
-  await salvar();
-  render();
+  abrirSheetData('Data do pagamento', `Quando ${e.nome} pagou?`, hojeISO(), async (data)=>{
+    e.pago = true;
+    dados.ledger.push({data, desc: 'Esporádico - '+e.nome, entrada: e.valor, saida: null});
+    await salvar();
+    render();
+    mostrarToast('Pagamento lançado no caixa');
+  });
 }
 
 async function addEsporadico(){
@@ -1165,6 +1195,37 @@ function fecharSheet(id){
 document.querySelectorAll('.sheet-backdrop').forEach(bd=>{
   bd.addEventListener('click', (e)=>{ if(e.target===bd) bd.classList.remove('show'); });
 });
+
+/* ======================= SHEET DE DATA (genérica) =======================
+   Usada tanto para escolher a data de um pagamento (mensalista/esporádico)
+   quanto para corrigir a data de um lançamento já existente.
+======================================================== */
+let __aoConfirmarData = null;
+function abrirSheetData(titulo, subtitulo, valorInicial, aoConfirmar){
+  document.getElementById('data-sheet-titulo').textContent = titulo;
+  document.getElementById('data-sheet-sub').textContent = subtitulo;
+  document.getElementById('data-sheet-input').value = valorInicial || hojeISO();
+  __aoConfirmarData = aoConfirmar;
+  abrirSheet('sheet-data');
+}
+function confirmarSheetData(){
+  const v = document.getElementById('data-sheet-input').value;
+  if(!v){ mostrarToast('Escolha uma data', 'erro'); return; }
+  const fn = __aoConfirmarData;
+  __aoConfirmarData = null;
+  fecharSheet('sheet-data');
+  if(fn) fn(v);
+}
+
+function editarDataLancamento(idx){
+  const l = dados.ledger[idx];
+  abrirSheetData('Editar data', l.desc || 'Lançamento', l.data || hojeISO(), async (data)=>{
+    l.data = data;
+    await salvar();
+    render();
+    mostrarToast('Data atualizada');
+  });
+}
 
 /* ======================= BACKUP ======================= */
 function exportarDados(){
