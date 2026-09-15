@@ -726,6 +726,25 @@ function fmtR(v){
   v = Number(v)||0;
   return 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:2});
 }
+/* Interpreta valores digitados em formato livre: "50", "R$ 50", " 50 ",
+   "15,50" (decimal BR) ou "1.500" (milhar BR). Retorna NaN se não der
+   pra entender nada — nunca finge sucesso com um número errado. */
+function parseValor(str){
+  if(str==null) return NaN;
+  let s = String(str).trim();
+  if(!s) return NaN;
+  s = s.replace(/r\$\s*/i, '').replace(/[^\d.,-]/g, '');
+  if(!s) return NaN;
+  if(s.includes(',')){
+    s = s.replace(/\./g, '').replace(',', '.');
+  }else{
+    const partes = s.split('.');
+    if(partes.length>2 || (partes.length===2 && partes[1].length===3)){
+      s = s.replace(/\./g, '');
+    }
+  }
+  return parseFloat(s);
+}
 function fmtData(iso){
   if(!iso) return '';
   const [y,m,d] = iso.split('-');
@@ -1029,8 +1048,10 @@ function toggleMensalista(i){
 
 async function addMensalista(){
   const nome = document.getElementById('novo-mensalista-nome').value.trim();
-  const valor = parseFloat(document.getElementById('novo-mensalista-valor').value.replace(',','.')) || 50;
+  const campoValor = document.getElementById('novo-mensalista-valor');
+  const valor = campoValor.value.trim()==='' ? 50 : parseValor(campoValor.value);
   if(!nome){ mostrarToast('Digite o nome', 'erro'); return; }
+  if(isNaN(valor) || valor<=0){ mostrarToast('Valor inválido', 'erro'); return; }
   dados.mensalistas.push({nome, fone:'', pago:false, valor});
   document.getElementById('novo-mensalista-nome').value='';
   document.getElementById('novo-mensalista-valor').value='50';
@@ -1058,7 +1079,7 @@ function editarValorMensalista(i){
   const m = dados.mensalistas[i];
   const novo = prompt('Novo valor mensal de '+m.nome+' (R$):', m.valor);
   if(novo===null) return;
-  const v = parseFloat(String(novo).replace(',','.'));
+  const v = parseValor(novo);
   if(isNaN(v) || v<=0){ mostrarToast('Valor inválido', 'erro'); return; }
   m.valor = v;
   salvar(); render();
@@ -1104,8 +1125,10 @@ function toggleEsporadico(i){
 
 async function addEsporadico(){
   const nome = document.getElementById('novo-esp-nome').value.trim();
-  const valor = parseFloat(document.getElementById('novo-esp-valor').value.replace(',','.')) || 15;
+  const campoValor = document.getElementById('novo-esp-valor');
+  const valor = campoValor.value.trim()==='' ? 15 : parseValor(campoValor.value);
   if(!nome){ mostrarToast('Digite o nome', 'erro'); return; }
+  if(isNaN(valor) || valor<=0){ mostrarToast('Valor inválido', 'erro'); return; }
   dados.esporadicos.push({nome, valor, pago:false});
   document.getElementById('novo-esp-nome').value='';
   document.getElementById('novo-esp-valor').value='15';
@@ -1132,7 +1155,7 @@ function editarValorEsporadico(i){
   const e = dados.esporadicos[i];
   const novo = prompt('Novo valor de '+e.nome+' (R$):', e.valor);
   if(novo===null) return;
-  const v = parseFloat(String(novo).replace(',','.'));
+  const v = parseValor(novo);
   if(isNaN(v) || v<=0){ mostrarToast('Valor inválido', 'erro'); return; }
   e.valor = v;
   salvar(); render();
@@ -1149,10 +1172,20 @@ function abrirLancamento(){
 
 async function salvarLancamento(){
   const desc = document.getElementById('lanc-desc').value.trim();
-  const entrada = parseFloat(document.getElementById('lanc-entrada').value.replace(',','.')) || null;
-  const saida = parseFloat(document.getElementById('lanc-saida').value.replace(',','.')) || null;
+  const entradaRaw = document.getElementById('lanc-entrada').value.trim();
+  const saidaRaw = document.getElementById('lanc-saida').value.trim();
   const data = document.getElementById('lanc-data').value || hojeISO();
   if(!desc){ mostrarToast('Descreva o lançamento', 'erro'); return; }
+
+  let entrada = null, saida = null;
+  if(entradaRaw){
+    entrada = parseValor(entradaRaw);
+    if(isNaN(entrada) || entrada<=0){ mostrarToast('Valor de entrada inválido', 'erro'); return; }
+  }
+  if(saidaRaw){
+    saida = parseValor(saidaRaw);
+    if(isNaN(saida) || saida<=0){ mostrarToast('Valor de saída inválido', 'erro'); return; }
+  }
   if(!entrada && !saida){ mostrarToast('Informe um valor de entrada ou saída', 'erro'); return; }
   dados.ledger.push({data, desc, entrada, saida});
   await salvar();
@@ -1174,8 +1207,17 @@ function abrirJogo(){
 }
 
 async function salvarJogo(){
-  const campo = parseFloat(document.getElementById('jogo-campo').value.replace(',','.')) || 0;
-  const uniforme = parseFloat(document.getElementById('jogo-uniforme').value.replace(',','.')) || 0;
+  const campoRaw = document.getElementById('jogo-campo').value.trim();
+  const uniformeRaw = document.getElementById('jogo-uniforme').value.trim();
+  let campo = 0, uniforme = 0;
+  if(campoRaw){
+    campo = parseValor(campoRaw);
+    if(isNaN(campo) || campo<0){ mostrarToast('Valor do aluguel inválido', 'erro'); return; }
+  }
+  if(uniformeRaw){
+    uniforme = parseValor(uniformeRaw);
+    if(isNaN(uniforme) || uniforme<0){ mostrarToast('Valor da lavagem inválido', 'erro'); return; }
+  }
   const hoje = hojeISO();
   if(campo>0) dados.ledger.push({data:hoje, desc:'Aluguel do campo', entrada:null, saida:campo});
   if(uniforme>0) dados.ledger.push({data:hoje, desc:'Lavagem de uniforme', entrada:null, saida:uniforme});
